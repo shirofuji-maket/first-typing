@@ -269,7 +269,9 @@
         if (history.length > 30) history = history.slice(0, 30);
         localStorage.setItem("typingHistory", JSON.stringify(history));
         const historyHtml = history.map((rec, i) => `${i + 1}. ${rec.date}：${rec.time} 秒`).join("<br>");
-        document.getElementById("history").innerHTML = `<h3>📋 過去の記録</h3>${historyHtml}`;
+        results.scrollIntoView({ behavior: 'smooth', block: 'center' });
+message.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
         for (let c of target) errorCounts[c] = 0;
       }
     });
