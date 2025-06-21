@@ -140,12 +140,15 @@
 
   function updateTargetDisplay() {
     if (currentIndex >= targetString.length) {
-      targetDisplay.innerHTML = "";
+      targetDisplay.innerHTML = "<span style='color: #2e6e4c;'>全てクリアしました！</span>";
     } else {
       const before = targetString.slice(0, currentIndex);
       const current = targetString[currentIndex];
       const after = targetString.slice(currentIndex + 1);
-      targetDisplay.innerHTML = before + `<span id="highlight">${current}</span>` + after;
+      targetDisplay.innerHTML =
+        [...before].map(c => `<span style="opacity: 0.3">${c}</span>`).join('') +
+        `<span id="highlight">${current}</span>` +
+        [...after].map(c => `<span style="opacity: 0.3">${c}</span>`).join('');
     }
   }
 
