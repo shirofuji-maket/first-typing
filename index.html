@@ -116,7 +116,7 @@
   ※ 半角英数入力でタイピングしてください（全角・かな入力は無効です）
 </p>
 
-<div id="targetDisplay">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+<div id="targetDisplay"></div>
 
 <div id="keyboard-wrapper">
   <img id="keyboard-image" src="keyboard-image.png" alt="キーボード図">
@@ -133,17 +133,20 @@
   let currentIndex = 0;
   const inputBox = document.getElementById("inputBox");
   const keyIndicator = document.getElementById("key-indicator");
-  const keyboardWrapper = document.getElementById("keyboard-wrapper");
   const results = document.getElementById("results");
   const message = document.getElementById("message");
   const errorSound = document.getElementById("errorSound");
   const targetDisplay = document.getElementById("targetDisplay");
 
   function updateTargetDisplay() {
-    const before = targetString.slice(0, currentIndex);
-    const current = targetString[currentIndex];
-    const after = targetString.slice(currentIndex + 1);
-    targetDisplay.innerHTML = before + `<span id="highlight">${current}</span>` + after;
+    if (currentIndex >= targetString.length) {
+      targetDisplay.innerHTML = "";
+    } else {
+      const before = targetString.slice(0, currentIndex);
+      const current = targetString[currentIndex];
+      const after = targetString.slice(currentIndex + 1);
+      targetDisplay.innerHTML = before + `<span id="highlight">${current}</span>` + after;
+    }
   }
 
   const keyPositions = {
