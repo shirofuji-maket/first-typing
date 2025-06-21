@@ -93,6 +93,20 @@
       display: flex;
       justify-content: center;
     }
+    #restartButton {
+      display: none;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #restartButton:hover {
+      background-color: #45a049;
+    }
     #history {
       position: fixed;
       top: 100px;
@@ -126,6 +140,7 @@
 <input id="inputBox" type="text" maxlength="26" autofocus autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 <div id="results"></div>
 <div id="message"></div>
+<button id="restartButton">もう一度練習する</button>
 <audio id="errorSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
 
 <script>
@@ -135,6 +150,7 @@
   const keyIndicator = document.getElementById("key-indicator");
   const results = document.getElementById("results");
   const message = document.getElementById("message");
+  const restartButton = document.getElementById("restartButton");
   const errorSound = document.getElementById("errorSound");
   const targetDisplay = document.getElementById("targetDisplay");
 
@@ -146,9 +162,9 @@
       const current = targetString[currentIndex];
       const after = targetString.slice(currentIndex + 1);
       targetDisplay.innerHTML =
-        [...before].map(c => `<span style="opacity: 0.3">${c}</span>`).join('') +
-        `<span id="highlight">${current}</span>` +
-        [...after].map(c => `<span style="opacity: 0.3">${c}</span>`).join('');
+        [...before].map(c => `<span style=\"opacity: 0.3\">${c}</span>`).join('') +
+        `<span id=\"highlight\">${current}</span>` +
+        [...after].map(c => `<span style=\"opacity: 0.3\">${c}</span>`).join('');
     }
   }
 
@@ -173,6 +189,17 @@
     }
   }
 
+  function resetPractice() {
+    currentIndex = 0;
+    inputBox.disabled = false;
+    results.innerHTML = "";
+    message.textContent = "";
+    updateTargetDisplay();
+    moveIndicatorForTarget();
+    restartButton.style.display = "none";
+    inputBox.focus();
+  }
+
   inputBox.addEventListener("input", () => {
     const inputChar = inputBox.value.slice(-1).toLowerCase();
     const targetChar = targetString[currentIndex];
@@ -185,13 +212,16 @@
         message.textContent = "🎉 完了しました！";
         inputBox.disabled = true;
         keyIndicator.style.display = 'none';
+        restartButton.style.display = "block";
       }
     } else {
-      results.innerHTML += `<span class="error">❌ ${inputChar}</span> `;
+      results.innerHTML += `<span class=\"error\">❌ ${inputChar}</span> `;
       errorSound.play();
     }
     inputBox.value = "";
   });
+
+  restartButton.addEventListener("click", resetPractice);
 
   updateTargetDisplay();
   moveIndicatorForTarget();
