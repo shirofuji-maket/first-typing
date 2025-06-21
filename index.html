@@ -184,6 +184,7 @@
       if (currentIndex >= targetString.length) {
         message.textContent = "🎉 完了しました！";
         inputBox.disabled = true;
+        keyIndicator.style.display = 'none';
       }
     } else {
       results.innerHTML += `<span class="error">❌ ${inputChar}</span> `;
