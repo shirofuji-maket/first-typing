@@ -50,37 +50,27 @@
       border: 2px solid #a3d9b1;
       border-radius: 8px;
       color: #2e3b30;
-      margin-top: 20px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
     }
     #results {
-      position: static;
-      margin-top: 30px;
-      max-height: 30vh;
-      overflow-y: auto;
+      margin-top: 20px;
       background-color: #ffffffcc;
       border-radius: 10px;
       padding: 10px;
       width: 60%;
-      color: #2e3b30;
-      text-align: center;
       margin-left: auto;
       margin-right: auto;
+      color: #2e3b30;
     }
     #message {
-      position: static;
       font-size: 1.2em;
       margin-top: 10px;
       font-weight: bold;
       color: #2e6e4c;
-      margin-bottom: 20px;
     }
     .error {
       background-color: #ffcccc;
     }
-    #targetDisplay {
+      #targetDisplay {
       font-size: clamp(1.2em, 3vw, 2.5em);
       margin: 30px auto;
       letter-spacing: 0.35em;
@@ -93,21 +83,7 @@
       display: flex;
       justify-content: center;
     }
-    #restartButton {
-      display: none;
-      margin: 20px auto;
-      padding: 10px 20px;
-      font-size: 1.2em;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    #restartButton:hover {
-      background-color: #45a049;
-    }
-    #history {
+      #history {
       position: fixed;
       top: 100px;
       right: 20px;
@@ -125,109 +101,163 @@
   </style>
 </head>
 <body>
+  <h1>A〜Z タイピング練習</h1>
+  <div id="keyboard-wrapper">
+    <img id="keyboard-image" src="ChatGPT Image 2025年6月12日 13_50_10.png" alt="キーボード図">
+    <div id="key-indicator"></div>
+  </div>
+  <div id="targetDisplay"></div>
+  <input
+    type="text"
+    id="inputBox"
+    placeholder="ここに入力..."
+    autofocus
+    inputmode="latin"
+    autocomplete="off"
+    autocapitalize="off"
+    spellcheck="false"
+/>
+  <div id="results"></div>
+  <div id="message"></div>
+  <audio id="errorSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
 
-<p id="inputNotice" style="color: #b94a48; font-weight: bold; font-size: 1.1em; background: #fff0f0; padding: 10px; border-radius: 8px; display: inline-block; margin-bottom: 20px;">
-  ※ 半角英数入力でタイピングしてください（全角・かな入力は無効です）
-</p>
+  <script>
+    const target = "abcdefghijklmnopqrstuvwxyz";
+    const inputBox = document.getElementById("inputBox");
+    const results = document.getElementById("results");
+    const message = document.getElementById("message");
+    const errorSound = document.getElementById("errorSound");
+    const targetDisplay = document.getElementById("targetDisplay");
+    const keyIndicator = document.getElementById("key-indicator");
 
-<div id="targetDisplay"></div>
+    let startTime = null;
+    let attempts = localStorage.getItem("typingAttempts") || 0;
+    let bestTime = localStorage.getItem("bestTime") || null;
+    let errorCounts = {};
+    for (let c of target) errorCounts[c] = 0;
 
-<div id="keyboard-wrapper">
-  <img id="keyboard-image" src="keyboard-image.png" alt="キーボード図">
-  <div id="key-indicator"></div>
-</div>
+    results.innerHTML = `今日は ${attempts} 回チャレンジしたよ！<br>` + (bestTime ? `✨ 最短時間：${bestTime} 秒` : "まだ記録はありません");
 
-<input id="inputBox" type="text" maxlength="26" autofocus autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-<div id="results"></div>
-<div id="message"></div>
-<button id="restartButton">もう一度練習する</button>
-<audio id="errorSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+    const keyPositions = {
+      a: [100, 205], b: [250, 240], c: [185, 240], d: [165, 205], e: [160, 170],
+      f: [200, 205], g: [235, 205], h: [265, 205], i: [325, 170], j: [300, 205],
+      k: [330, 205], l: [365, 205], m: [315, 240], n: [285, 240], o: [355, 170],
+      p: [390, 170], q: [90, 170], r: [190, 170], s: [135, 205], t: [225, 170],
+      u: [290, 170], v: [215, 240], w: [125, 170], x: [154, 240], y: [260, 170],
+      z: [118, 240]
+    };
 
-<script>
-  const targetString = "abcdefghijklmnopqrstuvwxyz";
-  let currentIndex = 0;
-  const inputBox = document.getElementById("inputBox");
-  const keyIndicator = document.getElementById("key-indicator");
-  const results = document.getElementById("results");
-  const message = document.getElementById("message");
-  const restartButton = document.getElementById("restartButton");
-  const errorSound = document.getElementById("errorSound");
-  const targetDisplay = document.getElementById("targetDisplay");
-
-  function updateTargetDisplay() {
-    if (currentIndex >= targetString.length) {
-      targetDisplay.innerHTML = "<span style='color: #2e6e4c;'>全てクリアしました！</span>";
-    } else {
-      const before = targetString.slice(0, currentIndex);
-      const current = targetString[currentIndex];
-      const after = targetString.slice(currentIndex + 1);
-      targetDisplay.innerHTML =
-        [...before].map(c => `<span style=\"opacity: 0.3\">${c}</span>`).join('') +
-        `<span id=\"highlight\">${current}</span>` +
-        [...after].map(c => `<span style=\"opacity: 0.3\">${c}</span>`).join('');
-    }
-  }
-
-  const keyPositions = {
-    a: { left: 100, top: 205 }, b: { left: 250, top: 240 }, c: { left: 185, top: 240 }, d: { left: 165, top: 205 }, e: { left: 160, top: 170 },
-    f: { left: 200, top: 205 }, g: { left: 235, top: 205 }, h: { left: 265, top: 205 }, i: { left: 325, top: 170 }, j: { left: 300, top: 205 },
-    k: { left: 330, top: 205 }, l: { left: 365, top: 205 }, m: { left: 315, top: 240 }, n: { left: 285, top: 240 }, o: { left: 355, top: 170 },
-    p: { left: 390, top: 170 }, q: { left: 90, top: 170 }, r: { left: 190, top: 170 }, s: { left: 135, top: 205 }, t: { left: 225, top: 170 },
-    u: { left: 290, top: 170 }, v: { left: 215, top: 240 }, w: { left: 125, top: 170 }, x: { left: 154, top: 240 }, y: { left: 260, top: 170 },
-    z: { left: 118, top: 240 },
-  };
-
-  function moveIndicatorForTarget() {
-    const targetChar = targetString[currentIndex];
-    const pos = keyPositions[targetChar];
-    if (pos) {
-      keyIndicator.style.left = pos.left + 'px';
-      keyIndicator.style.top = pos.top + 'px';
-      keyIndicator.style.display = 'block';
-    } else {
-      keyIndicator.style.display = 'none';
-    }
-  }
-
-  function resetPractice() {
-    currentIndex = 0;
-    inputBox.disabled = false;
-    results.innerHTML = "";
-    message.textContent = "";
-    updateTargetDisplay();
-    moveIndicatorForTarget();
-    restartButton.style.display = "none";
-    inputBox.focus();
-  }
-
-  inputBox.addEventListener("input", () => {
-    const inputChar = inputBox.value.slice(-1).toLowerCase();
-    const targetChar = targetString[currentIndex];
-
-    if (inputChar === targetChar) {
-      currentIndex++;
-      updateTargetDisplay();
-      moveIndicatorForTarget();
-      if (currentIndex >= targetString.length) {
-        message.textContent = "🎉 完了しました！";
-        inputBox.disabled = true;
-        keyIndicator.style.display = 'none';
-        restartButton.style.display = "block";
+    function updateTargetDisplay(currentLength) {
+      let html = "";
+      for (let i = 0; i < target.length; i++) {
+        if (i === currentLength) {
+          html += `<span id='highlight'>${target[i]}</span>`;
+        } else {
+          html += target[i];
+        }
       }
-    } else {
-      results.innerHTML += `<span class=\"error\">❌ ${inputChar}</span> `;
-      errorSound.play();
+      targetDisplay.innerHTML = html;
+      updateKeyIndicator(target[currentLength]);
     }
-    inputBox.value = "";
-  });
 
-  restartButton.addEventListener("click", resetPractice);
+    function updateKeyIndicator(letter) {
+      const pos = keyPositions[letter];
+      if (pos) {
+        keyIndicator.style.left = pos[0] + "px";
+        keyIndicator.style.top = pos[1] + "px";
+      } else {
+        keyIndicator.style.left = "-9999px";
+        keyIndicator.style.top = "-9999px";
+      }
+    }
 
-  updateTargetDisplay();
-  moveIndicatorForTarget();
-</script>
+    updateTargetDisplay(0);
 
-<div id="history"></div>
+    
 
+    inputBox.addEventListener("input", function () {
+      const input = inputBox.value;
+
+      if (input.length === 1 && !startTime) {
+        startTime = new Date();
+      }
+
+      let incorrect = false;
+      for (let i = 0; i < input.length; i++) {
+        if (input[i] !== target[i]) {
+          errorCounts[target[i]]++;
+          incorrect = true;
+          inputBox.classList.add("error");
+          errorSound.play();
+          break;
+        }
+      }
+
+      if (incorrect) {
+        inputBox.value = input.slice(0, input.length - 1);
+        updateTargetDisplay(input.length - 1);
+        return;
+      } else {
+        inputBox.classList.remove("error");
+        updateTargetDisplay(input.length);
+      }
+
+      if (input === target) {
+        const endTime = new Date();
+        const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
+        attempts++;
+        localStorage.setItem("typingAttempts", attempts);
+
+        let praise = "";
+        let encouragement = "";
+        let isNewBest = !bestTime || parseFloat(timeTaken) < parseFloat(bestTime);
+        let totalErrors = Object.values(errorCounts).reduce((a, b) => a + b, 0);
+
+        if (totalErrors === 0 && isNewBest) {
+          praise = "🌟すごい！ミスなしで自己ベスト更新！完璧です！🌟";
+        } else if (totalErrors === 0) {
+          praise = "💮ミスなし！すごく正確！💮";
+        } else if (isNewBest) {
+          praise = "⏱最短記録更新！スピードがどんどん上がってるよ！✨";
+        } else {
+          encouragement = totalErrors > 5 ? "大丈夫、ゆっくり確実に進もう！続ければ必ず上達します💪" : "あとちょっと！次はもっと良くなるよ😊";
+        }
+
+        if (isNewBest) {
+          bestTime = timeTaken;
+          localStorage.setItem("bestTime", bestTime);
+        }
+
+        const errorReport = Object.entries(errorCounts)
+          .sort((a, b) => b[1] - a[1])
+          .filter(entry => entry[1] > 0)
+          .map(entry => `${entry[0]}：${entry[1]}ミス`)
+          .join("<br>") || "ミスはありません！";
+
+        results.innerHTML = `✅ 完了！<br>⏱ 所要時間：${timeTaken} 秒<br>✨ 最短時間：${bestTime} 秒<br>💥 ミスしたキー：<br>${errorReport}<br>今日は ${attempts} 回チャレンジしたよ！`;
+
+        message.innerHTML = praise || encouragement;
+
+        inputBox.value = "";
+        startTime = null;
+        updateTargetDisplay(0);
+        for (let c of target) errorCounts[c] = 0;
+
+        // 履歴更新
+        let record = {
+          time: timeTaken,
+          date: new Date().toLocaleString()
+        };
+        let history = JSON.parse(localStorage.getItem("typingHistory") || "[]");
+        history.unshift(record);
+        if (history.length > 30) history = history.slice(0, 30);
+        localStorage.setItem("typingHistory", JSON.stringify(history));
+        const historyHtml = history.map((rec, i) => `${i + 1}. ${rec.date}：${rec.time} 秒`).join("<br>");
+        document.getElementById("history").innerHTML = `<h3>📋 過去の記録</h3>${historyHtml}`;
+        for (let c of target) errorCounts[c] = 0;
+      }
+    });
+  </script>
+  <div id="history"></div>
 </body>
 </html>
