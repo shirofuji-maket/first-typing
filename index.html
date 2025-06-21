@@ -66,17 +66,17 @@
   color: #2e3b30;
   text-align: center;
 }
-    #message {  position: fixed;
+    #message {
+  position: fixed;
   bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  
-      font-size: 1.2em;
-      margin-top: 10px;
-      font-weight: bold;
-      color: #2e6e4c;
-    }
+  font-size: 1.2em;
+  margin-top: 10px;
+  font-weight: bold;
+  color: #2e6e4c;
+}
     .error {
       background-color: #ffcccc;
     }
@@ -269,7 +269,6 @@
         const historyHtml = history.map((rec, i) => `${i + 1}. ${rec.date}：${rec.time} 秒`).join("<br>");
         results.scrollIntoView({ behavior: 'smooth', block: 'center' });
 message.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
         for (let c of target) errorCounts[c] = 0;
       }
     });
