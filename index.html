@@ -70,7 +70,7 @@
     .error {
       background-color: #ffcccc;
     }
-      #targetDisplay {
+    #targetDisplay {
       font-size: clamp(1.2em, 3vw, 2.5em);
       margin: 30px auto;
       letter-spacing: 0.35em;
@@ -83,7 +83,7 @@
       display: flex;
       justify-content: center;
     }
-      #history {
+    #history {
       position: fixed;
       top: 100px;
       right: 20px;
@@ -98,46 +98,42 @@
       color: #2e3b30;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
+    #notice {
+      font-size: 1em;
+      color: #c0392b;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    #retryPrompt {
+      font-size: 1em;
+      color: #333;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
   <h1>A〜Z タイピング練習</h1>
+  <div id="notice">※ 英数入力・半角モードで入力してください ※</div>
   <div id="keyboard-wrapper">
     <img id="keyboard-image" src="keyboard-image.png" alt="キーボード図">
     <div id="key-indicator"></div>
   </div>
   <div id="targetDisplay"></div>
-  <input
-    type="text"
-    id="inputBox"
-    placeholder="ここに入力..."
-    autofocus
-    inputmode="latin"
-    autocomplete="off"
-    autocapitalize="off"
-    spellcheck="false"
-/>
+  <input type="text" id="inputBox" placeholder="ここに入力..." autofocus inputmode="latin" autocomplete="off" autocapitalize="off" spellcheck="false" />
   <div id="results"></div>
   <div id="message"></div>
+  <div id="retryPrompt"></div>
   <audio id="errorSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
-
+  <div id="history"></div>
   <script>
-    const target = "abcdefghijklmnopqrstuvwxyz";
-    const inputBox = document.getElementById("inputBox");
-    const results = document.getElementById("results");
-    const message = document.getElementById("message");
-    const errorSound = document.getElementById("errorSound");
-    const targetDisplay = document.getElementById("targetDisplay");
-    const keyIndicator = document.getElementById("key-indicator");
-
-    let startTime = null;
-    let attempts = localStorage.getItem("typingAttempts") || 0;
-    let bestTime = localStorage.getItem("bestTime") || null;
-    let errorCounts = {};
-    for (let c of target) errorCounts[c] = 0;
-
-    results.innerHTML = `今日は ${attempts} 回チャレンジしたよ！<br>` + (bestTime ? `✨ 最短時間：${bestTime} 秒` : "まだ記録はありません");
-
+    const targetDisplay = document.getElementById('targetDisplay');
+    const inputBox = document.getElementById('inputBox');
+    const keyIndicator = document.getElementById('key-indicator');
+    const errorSound = document.getElementById('errorSound');
+    const results = document.getElementById('results');
+    const message = document.getElementById('message');
+    const retryPrompt = document.getElementById('retryPrompt');
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     const keyPositions = {
       a: [100, 205], b: [250, 240], c: [185, 240], d: [165, 205], e: [160, 170],
       f: [200, 205], g: [235, 205], h: [265, 205], i: [325, 170], j: [300, 205],
@@ -146,72 +142,62 @@
       u: [290, 170], v: [215, 240], w: [125, 170], x: [154, 240], y: [260, 170],
       z: [118, 240]
     };
+    let currentIndex = 0;
+    let startTime = Date.now();
+    let totalErrors = 0;
+    let errorCounts = {};
+    let bestTime = localStorage.getItem("bestTime") || null;
+    let attempts = parseInt(localStorage.getItem("attempts") || 0);
+    let typingFinished = false;
 
-    function updateTargetDisplay(currentLength) {
-      let html = "";
-      for (let i = 0; i < target.length; i++) {
-        if (i === currentLength) {
-          html += `<span id='highlight'>${target[i]}</span>`;
-        } else {
-          html += target[i];
-        }
-      }
-      targetDisplay.innerHTML = html;
-      updateKeyIndicator(target[currentLength]);
+    function showTarget() {
+      targetDisplay.innerHTML = alphabet.map((letter, i) => {
+        return i === currentIndex ? `<span id="highlight">${letter}</span>` : letter;
+      }).join('');
+      highlightNextKey();
     }
 
-    function updateKeyIndicator(letter) {
-      const pos = keyPositions[letter];
+    function highlightNextKey() {
+      const nextChar = alphabet[currentIndex]?.toLowerCase();
+      const pos = keyPositions[nextChar];
       if (pos) {
-        keyIndicator.style.left = pos[0] + "px";
-        keyIndicator.style.top = pos[1] + "px";
+        keyIndicator.style.left = `${pos[0]}px`;
+        keyIndicator.style.top = `${pos[1]}px`;
+        keyIndicator.style.display = 'block';
       } else {
-        keyIndicator.style.left = "-9999px";
-        keyIndicator.style.top = "-9999px";
+        keyIndicator.style.display = 'none';
       }
     }
 
-    updateTargetDisplay(0);
+    inputBox.addEventListener('input', () => {
+      if (typingFinished) return;
+      const value = inputBox.value.toUpperCase();
+      const currentChar = alphabet[currentIndex];
+      const lastChar = value[value.length - 1];
 
-    
-
-    inputBox.addEventListener("input", function () {
-      const input = inputBox.value;
-
-      if (input.length === 1 && !startTime) {
-        startTime = new Date();
-      }
-
-      let incorrect = false;
-      for (let i = 0; i < input.length; i++) {
-        if (input[i] !== target[i]) {
-          errorCounts[target[i]]++;
-          incorrect = true;
-          inputBox.classList.add("error");
-          errorSound.play();
-          break;
-        }
-      }
-
-      if (incorrect) {
-        inputBox.value = input.slice(0, input.length - 1);
-        updateTargetDisplay(input.length - 1);
-        return;
+      if (lastChar === currentChar) {
+        currentIndex++;
+        inputBox.value = value.slice(0, currentIndex);
+        showTarget();
       } else {
-        inputBox.classList.remove("error");
-        updateTargetDisplay(input.length);
+        errorSound.currentTime = 0;
+        errorSound.play();
+        inputBox.value = value.slice(0, currentIndex);
+        totalErrors++;
+        errorCounts[currentChar] = (errorCounts[currentChar] || 0) + 1;
       }
 
-      if (input === target) {
-        const endTime = new Date();
-        const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
+      if (currentIndex >= alphabet.length) {
+        typingFinished = true;
+        inputBox.disabled = true;
+        keyIndicator.style.display = 'none';
+        const timeTaken = ((Date.now() - startTime) / 1000).toFixed(2);
         attempts++;
-        localStorage.setItem("typingAttempts", attempts);
+        localStorage.setItem("attempts", attempts);
 
+        const isNewBest = !bestTime || timeTaken < bestTime;
         let praise = "";
         let encouragement = "";
-        let isNewBest = !bestTime || parseFloat(timeTaken) < parseFloat(bestTime);
-        let totalErrors = Object.values(errorCounts).reduce((a, b) => a + b, 0);
 
         if (totalErrors === 0 && isNewBest) {
           praise = "🌟すごい！ミスなしで自己ベスト更新！完璧です！🌟";
@@ -235,29 +221,30 @@
           .join("<br>") || "ミスはありません！";
 
         results.innerHTML = `✅ 完了！<br>⏱ 所要時間：${timeTaken} 秒<br>✨ 最短時間：${bestTime} 秒<br>💥 ミスしたキー：<br>${errorReport}<br>今日は ${attempts} 回チャレンジしたよ！`;
-
         message.innerHTML = praise || encouragement;
-
-        inputBox.value = "";
-        startTime = null;
-        updateTargetDisplay(0);
-        for (let c of target) errorCounts[c] = 0;
-
-        // 履歴更新
-        let record = {
-          time: timeTaken,
-          date: new Date().toLocaleString()
-        };
-        let history = JSON.parse(localStorage.getItem("typingHistory") || "[]");
-        history.unshift(record);
-        if (history.length > 30) history = history.slice(0, 30);
-        localStorage.setItem("typingHistory", JSON.stringify(history));
-        const historyHtml = history.map((rec, i) => `${i + 1}. ${rec.date}：${rec.time} 秒`).join("<br>");
-        document.getElementById("history").innerHTML = `<h3>📋 過去の記録</h3>${historyHtml}`;
-        for (let c of target) errorCounts[c] = 0;
+        retryPrompt.innerHTML = "▶ スペースキーで再チャレンジできます";
       }
     });
+
+    document.addEventListener('keydown', (e) => {
+      if (typingFinished && e.code === 'Space') {
+        currentIndex = 0;
+        totalErrors = 0;
+        errorCounts = {};
+        startTime = Date.now();
+        typingFinished = false;
+        inputBox.disabled = false;
+        inputBox.value = '';
+        results.innerHTML = '';
+        message.innerHTML = '';
+        retryPrompt.innerHTML = '';
+        bestTime = localStorage.getItem("bestTime") || null;
+        showTarget();
+        inputBox.focus();
+      }
+    });
+
+    showTarget();
   </script>
-  <div id="history"></div>
 </body>
 </html>
